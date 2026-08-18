@@ -9,6 +9,9 @@
 + Unhandled errors show a normal error dialog instead of the scary
    "Press OK to ignore and risk data corruption" box
 + Toolbar icons are 3x bigger (48px); menus and tree keep 16px
++ Fixed garbled (doubly-drawn) text in the attribute value list under
+   Qt5: the LCL does not honour DefaultDraw=False, so the custom bold
+   drawing overlapped the native text; custom draw disabled
 + Fixed SASL/Kerberos bind failure message crashing when the server
    diagnostic contained '%'
 + Fixed "Chase referrals = off" silently resetting the search size limit

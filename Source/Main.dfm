@@ -192,7 +192,6 @@ object MainFrm: TMainFrm
       SortType = stText
       TabOrder = 0
       ViewStyle = vsReport
-      OnCustomDrawItem = ValueListViewCustomDrawItem
       OnShowHint = ValueListViewShowHint
     end
     object EntryListView: TListView
