@@ -40,6 +40,7 @@ type
     FBitmap: TBitmap;
   public
     procedure ActivateHint(Rect: TRect; const AHint: String); override;
+    function CalcHintRect(MaxWidth: Integer; const AHint: String; AData: pointer): TRect; override;
   protected
     procedure Paint; override;
   public
@@ -57,11 +58,12 @@ constructor TGraphicHintWindow.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FBitmap := TBitmap.Create;
+  FInheritedPaint := true;
 end;
 
 procedure TGraphicHintWindow.Paint;
 begin
-  if FInheritedPaint then
+  if FInheritedPaint or (FBitmap.Width = 0) then
     inherited
   else
   with Canvas do begin
@@ -111,6 +113,44 @@ begin
         SWP_SHOWWINDOW or SWP_NOACTIVATE);
       Invalidate;
     except
+    end;
+  finally
+    ji.Free;
+  end;
+end;
+
+// The LCL hint manager sizes the hint via the virtual CalcHintRect and then
+// shows it through ActivateHintData - it never calls the ActivateHint(Rect,
+// Hint) override the VCL uses. Hooking CalcHintRect lets us both load the
+// jpeg preview and switch the paint mode for every hint that goes through
+// the LCL path; ordinary text hints get the default handling.
+function TGraphicHintWindow.CalcHintRect(MaxWidth: Integer; const AHint: String; AData: pointer): TRect;
+var
+  h: Integer;
+  Value: TLdapAttributeData;
+  ji: TJpegImage;
+begin
+  if Copy(AHint, 1, 22) <> 'TLdapAttributeDataPtr:' then
+  begin
+    FInheritedPaint := true;
+    Result := inherited CalcHintRect(MaxWidth, AHint, AData);
+    exit;
+  end;
+  Result := Rect(0, 0, 128, 128);
+  ji := TJpegImage.Create;
+  try
+    try
+      Value := TLdapAttributeData(Pointer(PtrInt(StrToInt64(Copy(AHint, 23, 255)))));
+      StreamCopy(Value.SaveToStream, ji.LoadFromStream);
+      FBitmap.Assign(ji);
+      if FBitmap.Width > 0 then
+        h := Round(FBitmap.Height / FBitmap.Width * 128)
+      else
+        h := 128;
+      Result := Rect(0, 0, 128, h);
+      FInheritedPaint := false;
+    except
+      FInheritedPaint := true;
     end;
   finally
     ji.Free;

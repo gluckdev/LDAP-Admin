@@ -2454,7 +2454,7 @@ begin
   // Rewrite AsString of the ClassType accordingly
   if TLdapAttributeData(Item.Data).DataType = dtJpeg then
   begin
-    InfoTip := 'TLdapAttributeDataPtr:'+IntToStr(Integer(Item.Data));
+    InfoTip := 'TLdapAttributeDataPtr:'+IntToStr(PtrInt(Item.Data));
     exit;
   end;
   InfoTip := '';
