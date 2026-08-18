@@ -1,3 +1,17 @@
+* Tue Aug 18 2026 Mikhail Artamonov <mikhail.artamonov@edutech-group.ru> - 0.1.2
+---------------------
++ Connection errors now show the real failure reason (host unreachable,
+   DNS, TLS handshake, server diagnostic) instead of "unknown (#-1)"
++ Unhandled errors show a normal error dialog instead of the scary
+   "Press OK to ignore and risk data corruption" box
++ Toolbar icons are 3x bigger (48px); menus and tree keep 16px
++ Fixed SASL/Kerberos bind failure message crashing when the server
+   diagnostic contained '%'
++ Fixed "Chase referrals = off" silently resetting the search size limit
++ Repository moved to github.com/gluckdev/LDAP-Admin: updated install
+   one-liner, APT repo URL (gluckdev.github.io), PKGBUILD and .deb metadata;
+   re-enabled GitHub Pages so the APT repository works again
+
 * Wed Jan 16 2019 Ivo <ivo.brhel at gmail.com>
 ---------------------
 + Fixed Synapse code for OpenSSL 1.1, synalist-code r209 

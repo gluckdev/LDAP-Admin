@@ -4,14 +4,14 @@ pkgver=0.0.0
 pkgrel=1
 pkgdesc="LDAP directory client and administration tool (OpenLDAP, Samba AD)"
 arch=('x86_64')
-url="https://github.com/mikhailartamonov/LDAP-Admin"
+url="https://github.com/gluckdev/LDAP-Admin"
 license=('GPL2')
 depends=('qt5pas' 'openssl')
 options=('!debug')
 makedepends=('lazarus-qt5' 'git' 'p7zip' 'curl')
 # Build from a specific tag by default; the CI helper overrides the source to
 # build the exact checked-out commit.
-source=("$pkgname::git+https://github.com/mikhailartamonov/LDAP-Admin.git#tag=v$pkgver")
+source=("$pkgname::git+https://github.com/gluckdev/LDAP-Admin.git#tag=v$pkgver")
 sha256sums=('SKIP')
 
 pkgver() {

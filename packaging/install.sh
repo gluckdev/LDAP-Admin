@@ -2,7 +2,7 @@
 #
 # LDAP Admin one-line installer.
 #
-#   curl -fsSL https://raw.githubusercontent.com/mikhailartamonov/LDAP-Admin/master/packaging/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/gluckdev/LDAP-Admin/master/packaging/install.sh | sh
 #
 # Detects the distribution, downloads the matching artifact from the latest
 # GitHub release and installs it:
@@ -12,7 +12,7 @@
 #
 set -eu
 
-REPO="mikhailartamonov/LDAP-Admin"
+REPO="gluckdev/LDAP-Admin"
 # Newest release including pre-releases (/releases/latest hides pre-releases).
 API="https://api.github.com/repos/$REPO/releases?per_page=1"
 

@@ -45,7 +45,7 @@ Depends: libc6, $WS_DEP, libssl3 | libssl3t64 | libssl1.1
 Recommends: ca-certificates
 Installed-Size: $INSTALLED_KB
 Maintainer: Mikhail Artamonov <mailtoartamonov@gmail.com>
-Homepage: https://github.com/mikhailartamonov/LDAP-Admin
+Homepage: https://github.com/gluckdev/LDAP-Admin
 Description: LDAP directory client and administration tool
  LDAP Admin is a Lazarus/Free Pascal port of the Windows LDAP Admin client.
  It browses and edits LDAP directories (OpenLDAP, Samba AD), manages POSIX

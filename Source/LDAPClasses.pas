@@ -1252,7 +1252,10 @@ begin
             if DnsQuery(Server, dnsRes) and (Length(dnsRes.Authority) > 0) then
               Settings.KerberosDN := dnsRes.Authority[0].QName;
             if not ldappld.BindSaslKerberos then
-              raise Exception.CreateFmt(ldappld.ResultString, [ldappld.ResultCode]);
+              // note: ResultString is a plain message, never a format string
+              raise ErrLdap.Create(ULONG(ldappld.ResultCode), 0,
+                Format(stLdapErrorEx, [RawLdapErrorString(ldappld.ResultCode),
+                  ldappld.ResultString]));
             res:=ldappld.ResultCode;
          end;
     else
@@ -1274,7 +1277,9 @@ begin
     if not fChaseReferrals then
     begin
       v := LDAP_OPT_OFF;
-      LdapCheck(ldap_set_option(ldappld, LDAP_OPT_SIZELIMIT, @v), false);
+      // was LDAP_OPT_SIZELIMIT by mistake, silently resetting the
+      // configured size limit to 0 (unlimited)
+      LdapCheck(ldap_set_option(ldappld, LDAP_OPT_REFERRALS, @v), false);
     end;
     if fReferralHops <> SESS_REFF_HOP_LIMIT then
       LdapCheck(ldap_set_option(ldappld, LDAP_OPT_REFERRAL_HOP_LIMIT,@fReferralHops), false);

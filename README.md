@@ -1,8 +1,8 @@
 # LDAP Admin for Linux
 
-[![Build & Release](https://github.com/mikhailartamonov/LDAP-Admin/actions/workflows/build.yml/badge.svg)](https://github.com/mikhailartamonov/LDAP-Admin/actions/workflows/build.yml)
-[![Latest release](https://img.shields.io/github/v/release/mikhailartamonov/LDAP-Admin?include_prereleases&sort=semver&color=1f6feb)](https://github.com/mikhailartamonov/LDAP-Admin/releases)
-[![Downloads](https://img.shields.io/github/downloads/mikhailartamonov/LDAP-Admin/total?color=2ea043)](https://github.com/mikhailartamonov/LDAP-Admin/releases)
+[![Build & Release](https://github.com/gluckdev/LDAP-Admin/actions/workflows/build.yml/badge.svg)](https://github.com/gluckdev/LDAP-Admin/actions/workflows/build.yml)
+[![Latest release](https://img.shields.io/github/v/release/gluckdev/LDAP-Admin?include_prereleases&sort=semver&color=1f6feb)](https://github.com/gluckdev/LDAP-Admin/releases)
+[![Downloads](https://img.shields.io/github/downloads/gluckdev/LDAP-Admin/total?color=2ea043)](https://github.com/gluckdev/LDAP-Admin/releases)
 ![Platform](https://img.shields.io/badge/platform-Ubuntu%20%7C%20Arch%20%7C%20AppImage-8957e6)
 ![UI](https://img.shields.io/badge/UI-Qt5-41cd52?logo=qt&logoColor=white)
 ![License](https://img.shields.io/badge/license-GPL--2.0-orange)
@@ -45,7 +45,7 @@ packaging is mine.
 > machines. This is explicitly **not** a polished 1.0; expect rough edges.
 >
 > **Disclaimer.** I built and run this on my own hardware only: Ubuntu 26.04
-> (kernel `7.0.0-22-generic`) and Arch Linux (rolling), tested *only* on my own
+> (kernel `7.0.0-29-generic`) and Arch Linux (rolling), tested *only* on my own
 > laptops. Active Directory / Samba AD is untested (I don't run Windows). On a
 > different setup your mileage may vary — if it breaks, open an issue and we'll
 > sort it out.
@@ -59,7 +59,7 @@ packaging is mine.
 ### One-liner (Ubuntu & Arch)
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/mikhailartamonov/LDAP-Admin/master/packaging/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/gluckdev/LDAP-Admin/master/packaging/install.sh | sh
 ```
 
 The script detects your distribution, downloads the matching artifact from the
@@ -76,7 +76,7 @@ sudo apt install ./ldapadmin_*_amd64.deb
 Or add the APT repository (hosted on GitHub Pages) to get updates via `apt`:
 
 ```sh
-echo "deb [trusted=yes] https://mikhailartamonov.github.io/LDAP-Admin/apt ./" \
+echo "deb [trusted=yes] https://gluckdev.github.io/LDAP-Admin/apt ./" \
   | sudo tee /etc/apt/sources.list.d/ldapadmin.list
 sudo apt update && sudo apt install ldapadmin
 ```
@@ -146,7 +146,7 @@ Requirements: Lazarus 4.x, FPC 3.2.2, the mORMot2 submodule and Qt5 bindings
 (`libqt5pas-dev` on Debian/Ubuntu, `qt5pas` on Arch).
 
 ```sh
-git clone https://github.com/mikhailartamonov/LDAP-Admin.git
+git clone https://github.com/gluckdev/LDAP-Admin.git
 cd LDAP-Admin
 git submodule update --init --recursive
 ./packaging/build.sh                 # builds Source/LdapAdmin
