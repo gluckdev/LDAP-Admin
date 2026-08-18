@@ -630,6 +630,11 @@ begin
   if ((ldap_get_option(pld, LDAP_OPT_SERVER_ERROR, @ErrorEx)=LDAP_SUCCESS) and Assigned(ErrorEx)) then
     msg := Format(stLdapErrorEx, [RawLdapErrorString(err), ErrorEx])
   else
+  if Assigned(pld) and (pld.ResultString <> '') then
+    // mORMot keeps the real failure reason (connection refused, DNS,
+    // TLS handshake, server diagnostic...) in ResultString
+    msg := Format(stLdapErrorEx, [RawLdapErrorString(err), pld.ResultString])
+  else
     msg := Format(stLdapError, [RawLdapErrorString(err)]);
     c := 0;
     // TODO check with OpenLdap
@@ -1211,7 +1216,10 @@ begin
     TLS := True
   else
     ldappld.Settings.AllowUnsafePasswordBind:=true;
-  ldappld.Connect;
+  // fail fast with the real reason (ResultString) if the TCP/TLS
+  // connection could not be established at all
+  if not ldappld.Connect then
+    LdapCheck(ULONG(ldappld.ResultCode));
   if Assigned(pld) then
   try
     LdapCheck(ldap_set_option(ldappld,LDAP_OPT_PROTOCOL_VERSION,@ldapVersion));

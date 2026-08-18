@@ -323,6 +323,7 @@ type
     fTreeHistory: TTreeHistory;
     fDisabledImages: TBetaDisabledImageList;
     fCacheTreeViews: Boolean;
+    procedure AppException(Sender: TObject; E: Exception);
     procedure ShowEntryList(Visible: Boolean);
     procedure ValueWrite(Sender: TLdapAttributeData);
     procedure EntryWrite(Sender: TObject);
@@ -1119,14 +1120,28 @@ begin
     end;
 end;
 
+procedure TMainFrm.AppException(Sender: TObject; E: Exception);
+begin
+  Screen.Cursor := crDefault;
+  MessageDlg(E.Message, mtError, [mbOk], 0);
+end;
+
 procedure TMainFrm.FormCreate(Sender: TObject);
 begin
+  Application.OnException := AppException;
   LdapTree.DoubleBuffered := true;
   ValueListView.DoubleBuffered := true;
   EntryListView.DoubleBuffered := true;
   fDisabledImages := TBetaDisabledImageList.Create(self);
   fDisabledImages.MasterImages := ImageList;
   ToolBar.DisabledImages := fDisabledImages;
+  {$IFDEF FPC}
+  // the original 16px icons are tiny on modern displays: let the LCL
+  // scale them up ~3x for the toolbar only (menus/tree keep 16px)
+  ToolBar.ImagesWidth := 48;
+  ToolBar.ButtonWidth := 52;
+  ToolBar.ButtonHeight := 52;
+  {$ENDIF}
   fConnections := nil;
   fSearchList := TLdapEntryList.Create(false);
   fLocateList := TLdapEntryList.Create;
