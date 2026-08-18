@@ -34,7 +34,8 @@ interface
 
 uses
   LCLIntf, LCLType, LazUtils, LinLDAP, lazutf8, LazFileUtils,
-  Sysutils,  Classes, Events, Constant, mormot.net.ldap, mormot.core.base, mormot.core.rtti ;
+  Sysutils,  Classes, Events, Constant, NetResolve,
+  mormot.net.ldap, mormot.core.base, mormot.core.rtti ;
 
 const
   LdapOpRead            = $FFFFFFFF;
@@ -1216,6 +1217,9 @@ begin
     TLS := True
   else
     ldappld.Settings.AllowUnsafePasswordBind:=true;
+  // resolve host names via getaddrinfo (IPv4 + IPv6): mORMot's own POSIX
+  // resolution is gethostbyname-based and can only reach IPv4 servers
+  InstallDualStackResolver(StrToIntDef(string(Port), 389));
   // fail fast with the real reason (ResultString) if the TCP/TLS
   // connection could not be established at all
   if not ldappld.Connect then

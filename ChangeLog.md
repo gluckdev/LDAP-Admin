@@ -1,5 +1,9 @@
 * Tue Aug 18 2026 Mikhail Artamonov <mikhail.artamonov@edutech-group.ru> - 0.1.2
 ---------------------
++ IPv6 support: host names are resolved via getaddrinfo (IPv4 + IPv6);
+   with several addresses each is probed and the first reachable one is
+   used, so servers behind IPv6-only routes (e.g. VPNs handing out dead
+   synthetic IPv4) now connect
 + Connection errors now show the real failure reason (host unreachable,
    DNS, TLS handshake, server diagnostic) instead of "unknown (#-1)"
 + Unhandled errors show a normal error dialog instead of the scary
