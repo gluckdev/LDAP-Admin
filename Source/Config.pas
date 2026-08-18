@@ -1953,8 +1953,131 @@ begin
 end;
 
 
+{$IFNDEF MSWINDOWS}
+{ Earlier Linux builds saved the whole configuration (accounts included) under
+  HKEY_CLASSES_ROOT in FPC's XML registry emulation, while current builds read
+  HKEY_CURRENT_USER - making existing connections vanish after an upgrade.
+  Move the legacy tree over once, before GlobalConfig opens the storage. }
+procedure MigrateLegacyClassesRootConfig;
+{ Uses a single TRegistry for both roots: every instance parses its own copy
+  of reg.xml and flushes it back independently, so a second instance would
+  overwrite the first one's changes with stale content. }
+var
+  Reg: TRegistry;
+
+  procedure CopyKey(const Path: string);
+  var
+    Values, Keys: TStringList;
+    Kinds: array of TRegDataType;
+    Ints: array of Integer;
+    Strs: array of string;
+    Bins: array of array of Byte;
+    Info: TRegDataInfo;
+    i: Integer;
+  begin
+    Values := TStringList.Create;
+    Keys := TStringList.Create;
+    try
+      Reg.RootKey := HKEY_CLASSES_ROOT;
+      if not Reg.OpenKeyReadOnly('\' + Path) then
+        exit;
+      Reg.GetValueNames(Values);
+      Reg.GetKeyNames(Keys);
+      SetLength(Kinds, Values.Count);
+      SetLength(Ints, Values.Count);
+      SetLength(Strs, Values.Count);
+      SetLength(Bins, Values.Count);
+      for i := 0 to Values.Count - 1 do
+      begin
+        Kinds[i] := rdUnknown;
+        if Reg.GetDataInfo(Values[i], Info) then
+        begin
+          Kinds[i] := Info.RegData;
+          case Info.RegData of
+            rdString, rdExpandString:
+              Strs[i] := Reg.ReadString(Values[i]);
+            rdInteger:
+              Ints[i] := Reg.ReadInteger(Values[i]);
+          else
+            begin
+              SetLength(Bins[i], Info.DataSize);
+              if Info.DataSize > 0 then
+                Reg.ReadBinaryData(Values[i], Bins[i][0], Info.DataSize);
+            end;
+          end;
+        end;
+      end;
+      Reg.CloseKey;
+      Reg.RootKey := HKEY_CURRENT_USER;
+      if not Reg.OpenKey('\' + Path, true) then
+        exit;
+      for i := 0 to Values.Count - 1 do
+        case Kinds[i] of
+          rdString, rdExpandString:
+            Reg.WriteString(Values[i], Strs[i]);
+          rdInteger:
+            Reg.WriteInteger(Values[i], Ints[i]);
+          rdUnknown: ;
+        else
+          if Length(Bins[i]) > 0 then
+            Reg.WriteBinaryData(Values[i], Bins[i][0], Length(Bins[i]));
+        end;
+      Reg.CloseKey;
+      for i := 0 to Keys.Count - 1 do
+        CopyKey(Path + '\' + Keys[i]);
+    finally
+      Values.Free;
+      Keys.Free;
+    end;
+  end;
+
+  procedure DeleteTree(const Path: string);
+  var
+    Keys: TStringList;
+    i: Integer;
+  begin
+    Reg.RootKey := HKEY_CLASSES_ROOT;
+    if not Reg.OpenKeyReadOnly('\' + Path) then
+      exit;
+    Keys := TStringList.Create;
+    try
+      Reg.GetKeyNames(Keys);
+      Reg.CloseKey;
+      for i := 0 to Keys.Count - 1 do
+        DeleteTree(Path + '\' + Keys[i]);
+    finally
+      Keys.Free;
+    end;
+    Reg.RootKey := HKEY_CLASSES_ROOT;
+    Reg.DeleteKey('\' + Path);
+  end;
+
+begin
+  Reg := TRegistry.Create;
+  try
+    try
+      Reg.RootKey := HKEY_CLASSES_ROOT;
+      if not Reg.KeyExists('Software\LdapAdmin') then
+        exit;
+      Reg.RootKey := HKEY_CURRENT_USER;
+      if Reg.KeyExists('Software\LdapAdmin\Accounts') then
+        exit; // current location already has data - nothing to rescue
+      CopyKey('Software\LdapAdmin');
+      DeleteTree('Software\LdapAdmin');
+    except
+      // a failed migration must never keep the application from starting
+    end;
+  finally
+    Reg.Free;
+  end;
+end;
+{$ENDIF}
+
 initialization
 
+  {$IFNDEF MSWINDOWS}
+  MigrateLegacyClassesRootConfig;
+  {$ENDIF}
   GlobalConfig := TGlobalConfig.Create(TRegistryConfigStorage.Create(HKEY_CURRENT_USER, REG_KEY));
 
 
