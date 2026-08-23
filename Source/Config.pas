@@ -289,7 +289,9 @@ type
   TRegistryConfigStorage = class(TConfigStorage)
   private
     FRegistry:    TRegistry;
+    FRegRootKey:  HKEY;
     FRootPath:    RawUtf8;
+    function      Reg: TRegistry;
     function      GetKeyName(Ident: RawUtf8): RawUtf8;
     function      GetValName(Ident: RawUtf8): RawUtf8;
   protected
@@ -463,6 +465,9 @@ begin
     result:=(ExtractFileName(Reg.ReadString(''))<> ExtractFileName(ParamStr(0))+' %1');
     Reg.CloseKey;
   finally
+    // the XML registry emulation shares one root key across all TRegistry
+    // instances, so leave it on the one the configuration storage expects
+    Reg.RootKey := HKEY_CURRENT_USER;
     Reg.Free;
   end;
 end;
@@ -494,8 +499,11 @@ procedure RegProtocol(Ext: RawUtf8);
     Reg.OpenKey(ext+'\DefaultIcon',True);
     Reg.WriteString('',ParamStr(0)+',1');
     Reg.CloseKey;
+    // see CheckProto: restore the shared root key for the config storage
+    Reg.RootKey := HKEY_CURRENT_USER;
     Reg.Free;
   except
+    Reg.RootKey := HKEY_CURRENT_USER;
     Reg.Free;
     if Win32MajorVersion > 5 then
       raise Exception.Create(stNeedElevated)
@@ -1376,6 +1384,7 @@ begin
   inherited Create;
   FPwdSave := true;
   FrootPath := Norm(ArootPath);
+  FRegRootKey := RootKey;
   FRegistry := TRegistry.Create;
   FRegistry.RootKey := RootKey;
   LoadAccounts;
@@ -1385,6 +1394,20 @@ destructor TRegistryConfigStorage.Destroy;
 begin
   FRegistry.Free;
   inherited;
+end;
+
+{ FPC's XML registry emulation keeps one TXmlRegistry per reg.xml, shared by
+  every TRegistry object - and TRegistry.RootKey stores the root in that shared
+  instance, not per TRegistry. So any other TRegistry created anywhere in the
+  process (CheckProto/RegProtocol use HKEY_CLASSES_ROOT) silently redirects our
+  reads and writes to its root: saved accounts then read back empty, which made
+  Connect fail with "no LDAP server found on this network". Re-assert our own
+  root before every path lookup - and only there, since SetRootKey also closes
+  the current key. }
+function TRegistryConfigStorage.Reg: TRegistry;
+begin
+  FRegistry.RootKey := FRegRootKey;
+  Result := FRegistry;
 end;
 
 function TRegistryConfigStorage.GetKeyName(Ident: RawUtf8): RawUtf8;
@@ -1403,7 +1426,7 @@ var
   s: RawUtf8;
   Buffer: PByteArray;
 begin
-  if not FRegistry.OpenKey(FrootPath+Norm(Parent), false) then exit;
+  if not Reg.OpenKey(FrootPath+Norm(Parent), false) then exit;
   if FRegistry.ValueExists(SrcName) then begin
     case FRegistry.GetDataType(SrcName) of
       rdInteger:      begin
@@ -1426,17 +1449,17 @@ begin
     end;
   end;
   FRegistry.CloseKey;
-  Fregistry.MoveKey(FRootPath+Norm(Parent)+Norm(SrcName), FRootPath+Norm(Parent)+Norm(DestName), false);
+  Reg.MoveKey(FRootPath+Norm(Parent)+Norm(SrcName), FRootPath+Norm(Parent)+Norm(DestName), false);
 end;
 
 procedure TRegistryConfigStorage.New(Parent, Name: RawUtf8);
 begin
-  FRegistry.CreateKey(FrootPath + Norm(Parent) + Norm(Name));
+  Reg.CreateKey(FrootPath + Norm(Parent) + Norm(Name));
 end;
 
 procedure TRegistryConfigStorage.Rename(Path, NewName: RawUtf8);
 begin
-  FRegistry.MoveKey(FrootPath + Norm(Path), FrootPath + Norm(ExtractFileDir(Path)) + Norm(NewName), true);
+  Reg.MoveKey(FrootPath + Norm(Path), FrootPath + Norm(ExtractFileDir(Path)) + Norm(NewName), true);
 end;
 
 procedure TRegistryConfigStorage.Delete(Ident: RawUtf8);
@@ -1461,7 +1484,7 @@ var
 begin
   s := FRootPath+Norm(Ident);
   { is it key or value? }
-  with FRegistry do
+  with Reg do
     if OpenKey(s, false) then
     begin
       CloseKey;
@@ -1479,14 +1502,14 @@ end;
 
 procedure TRegistryConfigStorage.GetKeyNames(Parent: RawUtf8; var Result: TStrings);
 begin
-  if not FRegistry.OpenKey(FRootPath+Norm(Parent), false) then exit;
+  if not Reg.OpenKey(FRootPath+Norm(Parent), false) then exit;
   FRegistry.GetKeyNames(result);
   FRegistry.CloseKey;
 end;
 
 procedure TRegistryConfigStorage.GetValueNames(Parent: RawUtf8; var Result: TStrings);
 begin
-  if not FRegistry.OpenKey(FRootPath+Norm(Parent), false) then exit;
+  if not Reg.OpenKey(FRootPath+Norm(Parent), false) then exit;
   FRegistry.GetValueNames(result);
   FRegistry.CloseKey;
 end;
@@ -1497,7 +1520,7 @@ var
   ValName, B64Val: RawUtf8;
 begin
   result:=0;
-  if not FRegistry.OpenKey(FRootPath+GetKeyName(Ident), false) then exit;
+  if not Reg.OpenKey(FRootPath+GetKeyName(Ident), false) then exit;
 
   ValName:=GetValName(Ident);
   case FRegistry.GetDataType(ValName) of
@@ -1519,7 +1542,7 @@ var
 begin
   result:=0;
   if BufSize=0 then exit;
-  if not FRegistry.OpenKey(FRootPath+GetKeyName(Ident), false) then exit;
+  if not Reg.OpenKey(FRootPath+GetKeyName(Ident), false) then exit;
 
   ValName:=GetValName(Ident);
   case FRegistry.GetDataType(ValName) of
@@ -1540,7 +1563,7 @@ end;
 
 procedure TRegistryConfigStorage.WriteBinaryData(Ident: RawUtf8; var Buffer; BufSize: Integer);
 begin
-  FRegistry.OpenKey(FRootPath+GetKeyName(Ident), true);
+  Reg.OpenKey(FRootPath+GetKeyName(Ident), true);
   FRegistry.WriteBinaryData(GetValName(Ident), Buffer, BufSize);
   FRegistry.CloseKey;
 end;
@@ -1553,7 +1576,7 @@ var
   Buffer: PByteArray;
 begin
   result:=Default;
-  if not FRegistry.OpenKey(FRootPath+GetKeyName(Ident), false) then exit;
+  if not Reg.OpenKey(FRootPath+GetKeyName(Ident), false) then exit;
 
   ValName:=GetValName(Ident);
   case FRegistry.GetDataType(ValName) of
@@ -1577,7 +1600,7 @@ end;
 
 procedure TRegistryConfigStorage.WriteBool(Ident: RawUtf8; Value: boolean);
 begin
-  FRegistry.OpenKey(FRootPath+GetKeyName(Ident), true);
+  Reg.OpenKey(FRootPath+GetKeyName(Ident), true);
   FRegistry.WriteBool(GetValName(Ident), Value);
   FRegistry.CloseKey;
 end;
@@ -1590,7 +1613,7 @@ var
   Buffer: PByteArray;
 begin
   result:=Default;
-  if not FRegistry.OpenKey(FRootPath+GetKeyName(Ident), false) then exit;
+  if not Reg.OpenKey(FRootPath+GetKeyName(Ident), false) then exit;
 
   ValName:=GetValName(Ident);
   case FRegistry.GetDataType(ValName) of
@@ -1613,7 +1636,7 @@ end;
 
 procedure TRegistryConfigStorage.WriteInteger(Ident: RawUtf8; Value: integer);
 begin
-  FRegistry.OpenKey(FRootPath+GetKeyName(Ident), true);
+  Reg.OpenKey(FRootPath+GetKeyName(Ident), true);
   FRegistry.WriteInteger(GetValName(Ident), Value);
   FRegistry.CloseKey;
 end;
@@ -1628,7 +1651,7 @@ var
 begin
   result:=Default;
   s := FRootPath + GetKeyName(Ident);
-  if not FRegistry.OpenKey(s, false) then
+  if not Reg.OpenKey(s, false) then
     exit;
 
   ValName:=GetValName(Ident);
@@ -1652,7 +1675,7 @@ end;
 
 procedure TRegistryConfigStorage.WriteString(Ident: RawUtf8; Value: RawUtf8);
 begin
-  FRegistry.OpenKey(FRootPath+GetKeyName(Ident), true);
+  Reg.OpenKey(FRootPath+GetKeyName(Ident), true);
   FRegistry.WriteString(GetValName(Ident), Value);
   FRegistry.CloseKey;
 end;
@@ -1665,7 +1688,7 @@ end;
 
 function TRegistryConfigStorage.ValueExist(const Ident: RawUtf8): boolean;
 begin
-  FRegistry.OpenKey(FRootPath+GetKeyName(Ident), true);
+  Reg.OpenKey(FRootPath+GetKeyName(Ident), true);
   result:=FRegistry.ValueExists(GetValName(Ident));
   FRegistry.CloseKey;
 end;
@@ -2068,6 +2091,9 @@ begin
       // a failed migration must never keep the application from starting
     end;
   finally
+    // the root key lives in the TXmlRegistry shared by every TRegistry, so
+    // hand it back on the root the configuration storage works with
+    Reg.RootKey := HKEY_CURRENT_USER;
     Reg.Free;
   end;
 end;

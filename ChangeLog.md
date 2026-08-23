@@ -1,3 +1,12 @@
+* Sun Aug 23 2026 Mikhail Artamonov <mikhail.artamonov@edutech-group.ru> - 0.1.3
+---------------------
++ Fixed saved connections failing with "Connect: no LDAP server found on
+   this network" right after the 0.1.2 configuration migration: FPC's XML
+   registry keeps a single root key shared by every TRegistry, so the
+   protocol-association check (HKEY_CLASSES_ROOT) redirected all later
+   configuration reads away from HKEY_CURRENT_USER and the stored server
+   name came back empty
+
 * Tue Aug 18 2026 Mikhail Artamonov <mikhail.artamonov@edutech-group.ru> - 0.1.2
 ---------------------
 + IPv6 support: host names are resolved via getaddrinfo (IPv4 + IPv6);
