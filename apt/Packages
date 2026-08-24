@@ -1,0 +1,21 @@
+Package: ldapadmin
+Version: 0.1.4
+Architecture: amd64
+Maintainer: Mikhail Artamonov <mailtoartamonov@gmail.com>
+Installed-Size: 11128
+Depends: libc6, libqt5pas1, libssl3 | libssl3t64 | libssl1.1
+Recommends: ca-certificates
+Filename: ./ldapadmin_0.1.4_amd64.deb
+Size: 3102710
+MD5sum: b9fa5b5d6359173d3944d96a1524db18
+SHA1: 3f7846fe855592525336179303815fd07da40eda
+SHA256: d3f5b9efcb677dd0abdf5d261109b1f9fdb468ee9a15cc52a2758e9fdd28a83f
+Section: net
+Priority: optional
+Homepage: https://github.com/gluckdev/LDAP-Admin
+Description: LDAP directory client and administration tool
+ LDAP Admin is a Lazarus/Free Pascal port of the Windows LDAP Admin client.
+ It browses and edits LDAP directories (OpenLDAP, Samba AD), manages POSIX
+ and Samba accounts, supports LDIF import/export, schema browsing, templates
+ and SSL/TLS connections.
+
