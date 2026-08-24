@@ -1,3 +1,18 @@
+* Mon Aug 24 2026 Mikhail Artamonov <mikhail.artamonov@edutech-group.ru> - 0.1.4
+---------------------
++ Fixed "Division by zero" when opening Start -> Connect (the connection
+   dialog never appeared): window sizes were stored as on-screen pixels but
+   restored in the form constructor, where the LCL scales them again for the
+   monitor DPI - on a HiDPI display the stored connection-list tree width
+   doubled on every visit until the LCL refused the bounds (>100000) and
+   answered with a bare "Division by zero" box. Window metrics are now stored
+   in design-time DPI units, and values that no longer fit the screen fall
+   back to the designed default instead of being restored
++ The same double-scaling is fixed for the search window and the template
+   (entry editor) window
++ Unhandled errors now also print the exception class to stderr, so a bare
+   dialog message can be traced back
+
 * Sun Aug 23 2026 Mikhail Artamonov <mikhail.artamonov@edutech-group.ru> - 0.1.3
 ---------------------
 + Fixed saved connections failing with "Connect: no LDAP server found on

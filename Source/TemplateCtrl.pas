@@ -888,8 +888,12 @@ begin
   else
     Caption := cNewEntry;
 
-  Height := GlobalConfig.ReadInteger(rTemplateFormHeight, 540);
-  Width := GlobalConfig.ReadInteger(rTemplateFormWidth, 440);
+  { Stored in design time DPI units - the LCL scales the form for the monitor
+    after this constructor, see UnscaleMetric in Misc.pas. }
+  Height := AcceptMetric(GlobalConfig.ReadInteger(rTemplateFormHeight, 540), 540,
+                         200, UnscaleScreenMetric(Self, Screen.Height));
+  Width := AcceptMetric(GlobalConfig.ReadInteger(rTemplateFormWidth, 440), 440,
+                        300, UnscaleScreenMetric(Self, Screen.Width));
   Position := poOwnerFormCenter;
 
   Panel := TPanel.Create(Self);
@@ -933,8 +937,8 @@ begin
   fTemplatePanels.Free;
   fEntry.Free;
   try
-    GlobalConfig.WriteInteger(rTemplateFormHeight, Height);
-    GlobalConfig.WriteInteger(rTemplateFormWidth, Width);
+    GlobalConfig.WriteInteger(rTemplateFormHeight, UnscaleMetric(Self, Height));
+    GlobalConfig.WriteInteger(rTemplateFormWidth, UnscaleMetric(Self, Width));
   except end; // just in case
 end;
 

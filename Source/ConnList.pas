@@ -949,9 +949,15 @@ begin
   TSizeGrip.Create(Panel1);
   with GlobalConfig do
   begin
-    Width := Min(Screen.Width, ReadInteger(CONF_FORM_WIDTH, Width));
-    Height := Min(Screen.Height, ReadInteger(CONF_FORM_HEIGHT, Height));
-    TreeView.Width := ReadInteger(CONF_TREE_WIDTH, TreeView.Width);
+    { The stored metrics are in design time DPI units (see UnscaleMetric); the
+      LCL scales them for the monitor once this constructor returns, so the
+      screen dimensions have to be brought down to the same units here. }
+    Width := AcceptMetric(ReadInteger(CONF_FORM_WIDTH, Width), Width,
+                          Self.Constraints.MinWidth, UnscaleScreenMetric(Self, Screen.Width));
+    Height := AcceptMetric(ReadInteger(CONF_FORM_HEIGHT, Height), Height,
+                           Self.Constraints.MinHeight, UnscaleScreenMetric(Self, Screen.Height));
+    TreeView.Width := AcceptMetric(ReadInteger(CONF_TREE_WIDTH, TreeView.Width),
+                                   TreeView.Width, 40, Width - 100);
     SetViewStyle(ReadInteger(CONF_ACCLV_STYLE, 1));
     RefreshStorageTree(GlobalConfig.Storages, TreeView, FImageOffset, ReadString(CONF_TREE_PATH, cRegistryCfgName));
   end;
@@ -965,9 +971,9 @@ end;
 procedure TConnListFrm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   with GlobalConfig do begin
-    WriteInteger(CONF_FORM_WIDTH, Width);
-    WriteInteger(CONF_FORM_HEIGHT, Height);
-    WriteInteger(CONF_TREE_WIDTH, TreeView.Width);
+    WriteInteger(CONF_FORM_WIDTH, UnscaleMetric(Self, Width));
+    WriteInteger(CONF_FORM_HEIGHT, UnscaleMetric(Self, Height));
+    WriteInteger(CONF_TREE_WIDTH, UnscaleMetric(Self, TreeView.Width));
     if Assigned(TreeView.Selected) then
       WriteString(CONF_TREE_PATH, GetSelPath(TreeView));
   end;

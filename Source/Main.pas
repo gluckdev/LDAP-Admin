@@ -1123,6 +1123,14 @@ end;
 procedure TMainFrm.AppException(Sender: TObject; E: Exception);
 begin
   Screen.Cursor := crDefault;
+  { A dialog reading just "Division by zero" tells nobody where it came from -
+    keep the exception class on stderr for anyone running from a terminal. }
+  try
+    WriteLn(StdErr, 'LdapAdmin: unhandled ', E.ClassName, ': ', E.Message);
+    Flush(StdErr);
+  except
+    // never let the logging itself break the error dialog
+  end;
   MessageDlg(E.Message, mtError, [mbOk], 0);
 end;
 

@@ -1728,8 +1728,12 @@ begin
     cbxReGreedy.Checked := ReadBool(rSearchRegExGreedy, true);
     cbxReCase.Checked := ReadBool(rSearchRegExCase, true);
     cbxReMultiLine.Checked := ReadBool(rSearchRegExMulti);
-    Height := ReadInteger(rSearchHeight, Height);
-    Width := ReadInteger(rSearchWidth, Width);
+    { Stored in design time DPI units - the LCL scales the form for the
+      monitor after this constructor, see UnscaleMetric in Misc.pas. }
+    Height := AcceptMetric(ReadInteger(rSearchHeight, Height), Height,
+                           200, UnscaleScreenMetric(Self, Screen.Height));
+    Width := AcceptMetric(ReadInteger(rSearchWidth, Width), Width,
+                          300, UnscaleScreenMetric(Self, Screen.Width));
   end;
   AConnection.OnDisconnect.Add(SessionDisconnect);
   StatusBar.Panels[0].Text := Format(cServer, [AConnection.Server]);
@@ -1754,8 +1758,8 @@ begin
     WriteBool(rSearchRegExGreedy, cbxReGreedy.Checked);
     WriteBool(rSearchRegExCase, cbxReCase.Checked);
     WriteBool(rSearchRegExMulti, cbxReMultiLine.Checked);
-    WriteInteger(rSearchHeight, Height);
-    WriteInteger(rSearchWidth, Width);
+    WriteInteger(rSearchHeight, UnscaleMetric(Self, Height));
+    WriteInteger(rSearchWidth, UnscaleMetric(Self, Width));
   end;
 end;
 

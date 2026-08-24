@@ -71,6 +71,10 @@ function CharPrev(lpsz,lpsc: PChar): PChar;
 { everything else :-) }
 function  GetTextExtent(Text: RawUtf8; Font: TFont): TSize;
 function  CenterWithSpaces(Font: TFont; s: RawUtf8;  BorderSize: Integer): RawUtf8;
+{ Persisted window metrics, see the comment at the implementation }
+function  UnscaleMetric(AForm: TCustomForm; Value: Integer): Integer;
+function  UnscaleScreenMetric(AForm: TCustomForm; Value: Integer): Integer;
+function  AcceptMetric(Stored, ADefault, AMin, AMax: Integer): Integer;
 function  HexMem(P: Pointer; Count: Integer; Ellipsis: Boolean): RawUtf8;
 procedure StreamCopy(pf, pt: TStreamProcedure);
 procedure LockControl(c: TWinControl; bLock: Boolean);
@@ -913,6 +917,54 @@ begin
   finally
     c.Free;
   end;
+end;
+
+{ Window metrics (form sizes, splitter positions) that are restored in a form's
+  constructor have to be *stored* in design time DPI units.
+
+  The LCL scales a form to the monitor's DPI in TCustomForm.AfterConstruction:
+  everything assigned before that - i.e. in the constructor - is multiplied by
+  Monitor.PixelsPerInch/DesignTimePPI, and the form's PixelsPerInch is set to
+  the monitor's one afterwards. Writing the on-screen value back therefore
+  scales it a second time on the next run: on a 192 dpi display the value
+  doubles with every visit, until TControl.DoSetBounds refuses it (>100000) and
+  the LCL reports that as a bare "Division by zero" dialog (RaiseGDBException
+  provokes one on purpose so a debugger stops there).
+
+  UnscaleMetric converts an on-screen metric back to design time units and is
+  meant for saving; UnscaleScreenMetric does the same for screen dimensions, to
+  compare them against not-yet-scaled values inside a constructor. }
+
+function UnscaleMetric(AForm: TCustomForm; Value: Integer): Integer;
+begin
+  Result := Value;
+  {$IFDEF FPC}
+  if Assigned(AForm) and (AForm.PixelsPerInch > 0) and (AForm.DesignTimePPI > 0) then
+    Result := Integer((Int64(Value) * AForm.DesignTimePPI + AForm.PixelsPerInch div 2) div AForm.PixelsPerInch);
+  {$ENDIF}
+end;
+
+function UnscaleScreenMetric(AForm: TCustomForm; Value: Integer): Integer;
+begin
+  Result := Value;
+  {$IFDEF FPC}
+  if Assigned(AForm) and Application.Scaled and AForm.Scaled and
+     (Screen.PixelsPerInch > 0) and (AForm.DesignTimePPI > 0) then
+    Result := Integer((Int64(Value) * AForm.DesignTimePPI + Screen.PixelsPerInch div 2) div Screen.PixelsPerInch);
+  {$ENDIF}
+end;
+
+{ Accepts a restored metric only when it is plausible for this run. A value
+  that does not fit on the screen (or in its form) comes from an older, broken
+  configuration - falling back to the designed default is both safer and less
+  surprising than clamping the nonsense to the screen edge. }
+
+function AcceptMetric(Stored, ADefault, AMin, AMax: Integer): Integer;
+begin
+  if (Stored >= AMin) and (Stored <= AMax) then
+    Result := Stored
+  else
+    Result := ADefault;
 end;
 
 { Centers lines of text (denoted by #10 character) by padding space characters
