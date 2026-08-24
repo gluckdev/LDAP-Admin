@@ -631,9 +631,12 @@ begin
   if ((ldap_get_option(pld, LDAP_OPT_SERVER_ERROR, @ErrorEx)=LDAP_SUCCESS) and Assigned(ErrorEx)) then
     msg := Format(stLdapErrorEx, [RawLdapErrorString(err), ErrorEx])
   else
-  if Assigned(pld) and (pld.ResultString <> '') then
+  if Assigned(pld) and (pld.ResultString <> '') and
+     (pld.ResultString <> RawLdapErrorString(err)) then
     // mORMot keeps the real failure reason (connection refused, DNS,
-    // TLS handshake, server diagnostic...) in ResultString
+    // TLS handshake, server diagnostic...) in ResultString - but when the
+    // server sends no diagnostic it just repeats the error name, and
+    // "invalidCredentials (#49): invalidCredentials (#49)" helps nobody
     msg := Format(stLdapErrorEx, [RawLdapErrorString(err), pld.ResultString])
   else
     msg := Format(stLdapError, [RawLdapErrorString(err)]);

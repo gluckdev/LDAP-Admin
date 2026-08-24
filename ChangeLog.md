@@ -12,6 +12,8 @@
    (entry editor) window
 + Unhandled errors now also print the exception class to stderr, so a bare
    dialog message can be traced back
++ LDAP errors without a server diagnostic no longer repeat themselves
+   ("invalidCredentials (#49): invalidCredentials (#49)")
 
 * Sun Aug 23 2026 Mikhail Artamonov <mikhail.artamonov@edutech-group.ru> - 0.1.3
 ---------------------
